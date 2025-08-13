@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const os = require('os');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,8 +15,21 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 3000;
 
+// Função para obter IP local
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
 // Servir arquivos estáticos
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 // Dados em memória
@@ -28,7 +42,7 @@ let tables = Array.from({length: 12}, (_, i) => ({
 
 // Rota principal
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // WebSocket connections
@@ -119,6 +133,12 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
+  const localIP = getLocalIP();
   console.log(`Servidor rodando na porta ${PORT}`);
   console.log(`Acesse: http://localhost:${PORT}`);
+  console.log(`Acesse pela rede: http://${localIP}:${PORT}`);
+  console.log('');
+  console.log('URLs de acesso:');
+  console.log(`- Local: http://localhost:${PORT}`);
+  console.log(`- Rede: http://${localIP}:${PORT}`);
 });
